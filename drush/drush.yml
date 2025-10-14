@@ -3,4 +3,4 @@ command:
     install:
       options:
         account-pass: admin
-        site-name: Drupal
+        site-name: 2025 Demo

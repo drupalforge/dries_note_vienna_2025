@@ -13,6 +13,7 @@ hooks:
         # Set up debugging.
         - exec: test -f .vscode/launch.json || mkdir -p .vscode && cp .ddev/launch.json .vscode/
         # Run initial setup tasks.
+        - exec: .devpanel/custom_package_installer.sh
         - exec: .devpanel/init.sh
 use_dns_when_possible: true
 composer_version: "2"
@@ -25,7 +26,6 @@ web_environment:
     - DB_USER=db
     - DB_PASSWORD=db
     - DB_NAME=db
-    - DP_APP_ID=starter_template
+    - DP_APP_ID=driesnote_vienna_2025
     - DB_DRIVER=mysql
-corepack_enable: false
-ddev_version_constraint: '>=1.24.0'
+corepack_enable: true
