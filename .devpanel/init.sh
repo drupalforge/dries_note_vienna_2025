@@ -11,8 +11,6 @@ exec > >(tee $LOG_FILE) 2>&1
 TIMEFORMAT=%lR
 # For faster performance, don't audit dependencies automatically.
 export COMPOSER_NO_AUDIT=1
-# For faster performance, don't install dev dependencies.
-export COMPOSER_NO_DEV=1
 
 # Install VSCode Extensions
 if [ -n "${DP_VSCODE_EXTENSIONS:-}" ]; then
@@ -40,8 +38,8 @@ else
   time source .devpanel/composer_setup.sh
   echo
 fi
-# If update fails, change it to install.
-time composer -n update --no-dev --no-progress
+time composer -n update --no-progress
+time ln -s -f $(realpath -s --relative-to=web/profiles project_template/web/profiles/drupal_cms_installer) web/profiles
 
 #== Create the private files directory.
 if [ ! -d private ]; then
@@ -68,7 +66,23 @@ fi
 echo
 if [ -z "$(drush status --field=db-status)" ]; then
   echo 'Install Drupal.'
-  time drush -n si
+  # For some reason, writable directories are sometimes detected as not
+  # writable, so loop until it works.
+  until time drush -n si drupal_cms_installer installer_site_template_form.add_ons=byte; do
+    :
+  done
+  time drush cr
+  echo 'Apply Canvas AI Setup recipe.'
+  time drush -q recipe ../custom_recipes/canvas_ai_setup
+  time drush cr
+  echo 'Apply Media Images recipe.'
+  until time drush -q recipe ../custom_recipes/media_images; do
+    :
+  done
+  echo 'Apply Mercury Demo Page recipe.'
+  time drush -q recipe ../custom_recipes/new_canvas_page
+  time drush cr
+  time drush sapi-i
 
   echo
   echo 'Tell Automatic Updates about patches.'

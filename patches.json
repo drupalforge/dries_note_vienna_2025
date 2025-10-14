@@ -1,5 +1,8 @@
 {
     "patches": {
+        "drupal/canvas": {
+            "#3550165: Sort property keys of default-relative-url": "https://www.drupal.org/files/issues/2025-10-28/3550165-MR187-11.patch"
+        },
         "drupal/core": {
             "#3531174: Add configuration for additional known files in project root": "https://git.drupalcode.org/project/drupal/-/merge_requests/12432.patch"
         }
