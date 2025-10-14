@@ -1,0 +1,31 @@
+type: drupal11
+docroot: web
+php_version: "8.3"
+webserver_type: apache-fpm
+xdebug_enabled: false
+additional_hostnames: []
+additional_fqdns: []
+database:
+    type: mysql
+    version: "8.0"
+hooks:
+    post-start:
+        # Set up debugging.
+        - exec: test -f .vscode/launch.json || mkdir -p .vscode && cp .ddev/launch.json .vscode/
+        # Run initial setup tasks.
+        - exec: .devpanel/init.sh
+use_dns_when_possible: true
+composer_version: "2"
+web_environment:
+    # Set up DevPanel variables.
+    - APP_ROOT=$DDEV_COMPOSER_ROOT
+    - WEB_ROOT=$DDEV_COMPOSER_ROOT/$DDEV_DOCROOT
+    - DB_HOST=db
+    - DB_PORT=3306
+    - DB_USER=db
+    - DB_PASSWORD=db
+    - DB_NAME=db
+    - DP_APP_ID=starter_template
+    - DB_DRIVER=mysql
+corepack_enable: false
+ddev_version_constraint: '>=1.24.0'

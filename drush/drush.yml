@@ -1,0 +1,6 @@
+command:
+  site:
+    install:
+      options:
+        account-pass: admin
+        site-name: Drupal

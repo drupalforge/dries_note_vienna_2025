@@ -1,0 +1,26 @@
+include:
+  - base/docker-compose.base.yml
+
+services:
+  app:
+    image: devpanel/php:8.3-base-rc
+    environment:
+      DP_APP_ID: 'drupalforge'
+      APP_ROOT: '/var/www/html'        
+      WEB_ROOT: '/var/www/html/web'
+      CODES_USER_DATA_DIR: '/var/www/html/.vscode'
+      CODES_WORKING_DIR: '/var/www/html'
+      APACHE_RUN_USER: 'www'
+      APACHE_RUN_GROUP: 'www'
+      CODES_ENABLE: 'no'
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_ROOT_PASSWORD: root
+      DB_NAME: drupaldb
+      DB_USER: user
+      DB_PASSWORD: password
+      DB_DRIVER: mysql
+    volumes:
+      - "..:/var/www/html"
+    depends_on:
+      - db
