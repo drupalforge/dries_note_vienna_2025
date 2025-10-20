@@ -13,10 +13,13 @@ if [ -n "$DEBUG_SCRIPT" ]; then
 fi
 
 # Install APT packages.
-if ! command -v npm >/dev/null 2>&1; then
+if ! command -v milvus >/dev/null 2>&1; then
   sudo apt-get update
-  sudo apt-get install -y jq nano npm
+  wget https://github.com/milvus-io/milvus/releases/download/v2.4.1/milvus_2.4.1-1_amd64.deb
+  sudo apt-get install -y jq nano npm ./milvus_2.4.1-1_amd64.deb
+  rm milvus_2.4.1-1_amd64.deb
 fi
+sed '/localhost/ s/$/ milvus/' /etc/hosts | sudo tee /etc/hosts
 
 # Enable AVIF support in GD extension if not already enabled.
 if [ -z "$(php --ri gd | grep AVIF)" ]; then
