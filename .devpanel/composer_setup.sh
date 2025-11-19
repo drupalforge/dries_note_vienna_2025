@@ -13,7 +13,7 @@ cp -rn v2025demo/* ./
 rm -rf v2025demo
 
 # Programmatically fix Composer 2.2 allow-plugins to avoid errors.
-composer config --no-plugins allow-plugins.cweagans/composer-patches true
+composer config --no-plugins allow-plugins.tbachert/spi false
 
 # Scaffold settings.php.
 composer config -jm extra.drupal-scaffold.file-mapping '{
