@@ -13,6 +13,52 @@ if [ -n "${DEBUG_SCRIPT:-}" ]; then
 fi
 set -eu -o pipefail
 
+# --- sudo-safe logging helpers -------------------------------------------------
+# Use these helpers to avoid the common "sudo + shell redirection" pitfall.
+# They:
+#  - ensure /var/log/etcd.log exists and is writable (using sudo when needed)
+#  - provide log_append for single-line appends
+#  - provide run_as_root for running full commands with redirections under root
+
+is_root() {
+  [ "$(id -u)" -eq 0 ]
+}
+
+ensure_log_file() {
+  if is_root; then
+    mkdir -p /var/log
+    touch /var/log/etcd.log
+    chmod 0666 /var/log/etcd.log || true
+  else
+    if command -v sudo >/dev/null 2>&1; then
+      sudo bash -c 'mkdir -p /var/log; touch /var/log/etcd.log; chmod 0666 /var/log/etcd.log || true'
+    else
+      echo "ERROR: sudo required to create /var/log/etcd.log" >&2
+      exit 1
+    fi
+  fi
+}
+
+log_append() {
+  local msg="$1"
+  if is_root; then
+    echo "$msg" | tee -a /var/log/etcd.log >/dev/null
+  else
+    echo "$msg" | sudo tee -a /var/log/etcd.log >/dev/null
+  fi
+}
+
+run_as_root() {
+  if is_root; then
+    bash -c "$*"
+  else
+    sudo bash -c "$*"
+  fi
+}
+
+# Ensure the log file exists and is writable before any redirections are attempted.
+ensure_log_file
+
 # Install APT packages.
 if ! command -v milvus >/dev/null 2>&1; then
   sudo apt-get update
@@ -46,10 +92,7 @@ if ! command -v milvus >/dev/null 2>&1; then
       sudo cp "$APP_ROOT/.devpanel/milvus/etcd.conf" /etc/supervisor/conf.d/etcd.conf
     fi
     # Start etcd directly after install. (Supervisor will manage on next restart.)
-    sudo setsid etcd --data-dir=/var/lib/etcd \
-      --listen-client-urls=http://127.0.0.1:2379 \
-      --advertise-client-urls=http://127.0.0.1:2379 \
-      --listen-peer-urls=http://127.0.0.1:2380 </dev/null >/var/log/etcd.log 2>&1 &
+    run_as_root "setsid etcd --data-dir=/var/lib/etcd --listen-client-urls=http://127.0.0.1:2379 --advertise-client-urls=http://127.0.0.1:2379 --listen-peer-urls=http://127.0.0.1:2380 </dev/null >/var/log/etcd.log 2>&1 &"
     # Wait for etcd to be ready.
     echo "Waiting for etcd to be ready..."
     for i in {1..30}; do
@@ -94,7 +137,7 @@ if ! command -v milvus >/dev/null 2>&1; then
     sudo cp "$APP_ROOT/.devpanel/milvus/milvus.conf" /etc/supervisor/conf.d/milvus.conf
   fi
   # Start Milvus directly after install. (Supervisor will manage Milvus on next container restart.)
-  cd / && sudo setsid bash -c "MILVUSCONF=/etc/milvus/configs/ /usr/bin/milvus run standalone" </dev/null >/var/log/milvus.out.log 2>/var/log/milvus.err.log &
+  cd / && run_as_root "setsid bash -c 'MILVUSCONF=/etc/milvus/configs/ /usr/bin/milvus run standalone' </dev/null >/var/log/milvus.out.log 2>/var/log/milvus.err.log &"
   # Wait for Milvus to be ready.
   echo "Waiting for Milvus to be ready..."
   for i in {1..60}; do
