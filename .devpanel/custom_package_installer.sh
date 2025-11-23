@@ -25,6 +25,8 @@ is_root() {
 }
 
 ensure_log_file() {
+  # Note: Uses 0666 permissions intentionally to allow writes from both root and non-root
+  # users in containerized environments where the user context may vary.
   if is_root; then
     mkdir -p /var/log
     touch /var/log/etcd.log
@@ -49,6 +51,8 @@ log_append() {
 }
 
 run_as_root() {
+  # Note: Uses $* to pass the entire command string to bash -c, which is necessary
+  # for commands containing shell redirections. Only use with trusted/literal commands.
   if is_root; then
     bash -c "$*"
   else
