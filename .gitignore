@@ -1,3 +1,5 @@
+/.ddev/.env
+/.ddev/milvus/
 /.devpanel/dumps/
 /.devpanel/salt.txt
 /.editorconfig

@@ -1,0 +1,11 @@
+# Copy Attu Node.js application
+COPY --from=attu /app /app
+COPY --from=attu /usr/local/bin/node /usr/local/bin/node
+COPY --from=attu /usr/local/lib/node_modules /usr/local/lib/node_modules
+
+# Fix permissions for attu to write env-config.js
+# DDEV runs supervisor as the container user, so attu needs matching ownership
+RUN chown -R $username:$username /app/build
+
+# Copy Supervisor config for attu service
+COPY supervisor/attu.conf /etc/supervisor/conf.d/attu.conf
