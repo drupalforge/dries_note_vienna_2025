@@ -108,6 +108,28 @@ if ! command -v milvus >/dev/null 2>&1; then
     echo "ERROR: Milvus did not become ready in time." >&2
     exit 1
   fi
+  # Install and start Attu only after Milvus is healthy
+  if [ "$ARCH" = "amd64" ] && ! command -v attu >/dev/null 2>&1; then
+    echo "Installing Attu .deb package for amd64..."
+    wget -O attu_2.6.2_amd64.deb https://github.com/zilliztech/attu/releases/download/v2.6.2/attu_2.6.2_amd64.deb
+    sudo DEBIAN_FRONTEND=noninteractive apt-get -y install ./attu_2.6.2_amd64.deb
+    rm attu_2.6.2_amd64.deb
+    # Copy Supervisor config for Attu
+    if [ -f "$APP_ROOT/.devpanel/milvus/attu.conf" ]; then
+      sudo cp "$APP_ROOT/.devpanel/milvus/attu.conf" /etc/supervisor/conf.d/attu.conf
+    fi
+    echo "Starting Attu GUI for Milvus..."
+    sudo setsid attu --port 8521 --milvusAddr http://127.0.0.1:19530 </dev/null 2>&1 | sudo tee /var/log/attu.out.log >/dev/null &
+    # Copy Attu vhost config for Apache only if Attu started
+    if [ -f "$APP_ROOT/.devpanel/milvus/attu-vhost.conf" ]; then
+      sudo cp "$APP_ROOT/.devpanel/milvus/attu-vhost.conf" /etc/apache2/sites-available/attu-vhost.conf
+      sudo a2enmod proxy proxy_http
+      sudo a2ensite attu-vhost.conf
+      PECL_UPDATED=true
+    fi
+  elif [ "$ARCH" = "amd64" ]; then
+    echo "ERROR: Attu binary not found after installation. Check previous steps for errors." >&2
+  fi
 fi
 if ! getent hosts | grep -q milvus && curl -s http://127.0.0.1:9091/healthz | grep -q '^OK$'; then
   sed '/localhost/ s/$/ milvus/' /etc/hosts | sudo tee /etc/hosts || :

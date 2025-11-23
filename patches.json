@@ -3,6 +3,9 @@
         "drupal/ai_simple_pdf_to_text": {
             "#3558855: Incorrect package name": "https://git.drupalcode.org/project/ai_simple_pdf_to_text/-/commit/17492eb2f67f07fc84b096bb9e7258fe5fbb3ba9.patch"
         },
+        "drupal/ai_vdb_provider_milvus": {
+            "Proxy /attu to Attu service on port 8521": "patches/ai_vdb_provider_milvus/attu.patch"
+        },
         "drupal/canvas": {
             "#3550165: Sort property keys of default-relative-url": "https://www.drupal.org/files/issues/2025-10-28/3550165-MR187-11.patch"
         },
