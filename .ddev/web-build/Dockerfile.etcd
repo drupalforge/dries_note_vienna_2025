@@ -1,0 +1,9 @@
+# Copy etcd binary
+COPY --from=etcd /usr/local/bin/etcd /usr/local/bin/etcd
+COPY --from=etcd /usr/local/bin/etcdctl /usr/local/bin/etcdctl
+
+# Create etcd data directory
+RUN mkdir -p /etcd && chown -R $username:$username /etcd
+
+# Copy Supervisor config for etcd service
+COPY supervisor/etcd.conf /etc/supervisor/conf.d/etcd.conf
