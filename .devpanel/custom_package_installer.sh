@@ -21,16 +21,16 @@ is_root() {
   [ "$(id -u)" -eq 0 ]
 }
 
-# Create /var/log/etcd.log with permissive permissions (0666) so non-root users can write.
+# Create log file with group-writable permissions (0664) so processes can write to it.
 # Uses sudo if the script is not running as root.
 ensure_log_file() {
   local log_file="${1:-/var/log/etcd.log}"
   if is_root; then
     touch "$log_file"
-    chmod 0666 "$log_file"
+    chmod 0664 "$log_file"
   else
     sudo touch "$log_file"
-    sudo chmod 0666 "$log_file"
+    sudo chmod 0664 "$log_file"
   fi
 }
 
@@ -62,8 +62,10 @@ run_as_root() {
 
 # Install APT packages.
 if ! command -v milvus >/dev/null 2>&1; then
-  # Ensure log file exists with proper permissions before any redirections occur.
+  # Ensure log files exist with proper permissions before any redirections occur.
   ensure_log_file /var/log/etcd.log
+  ensure_log_file /var/log/milvus.out.log
+  ensure_log_file /var/log/milvus.err.log
   
   sudo apt-get update
   ARCH=$(dpkg --print-architecture)
