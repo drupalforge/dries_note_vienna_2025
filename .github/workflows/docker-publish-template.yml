@@ -1,18 +1,59 @@
 name: Docker build and push template
 on:
   push:
-    branches:
-      - "main"
-  schedule:
-    - cron: '0 11 * * 0,1,2,3,4,5'
-  workflow_dispatch:
-permissions:
-  actions: write
+    branches: [ main ]
+
 jobs:
-  build-application:
-    uses: drupalforge/docker_publish_action/.github/workflows/docker-publish.yml@dries_note_vienna_2025
-    with:
-      dockerhub_username: ${{ vars.DOCKERHUB_USERNAME }}
-    secrets:
-      dockerhub_token: ${{ secrets.DOCKERHUB_TOKEN }}
-      openai_key: ${{ secrets.OPENAI_KEY }}
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Set Node memory cap
+        run: echo "NODE_OPTIONS=--max_old_space_size=2048" >> $GITHUB_ENV
+
+      - name: Restore npm cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Install dependencies and build on runner
+        env:
+          CI: true
+          npm_config_jobs: 1
+        run: |
+          npm ci --prefer-offline --no-audit --no-fund
+          npm run build
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push runtime image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./Dockerfile.runtime
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ghcr.io/${{ github.repository }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            NODE_ENV=production
