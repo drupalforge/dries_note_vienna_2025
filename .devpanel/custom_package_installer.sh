@@ -13,8 +13,58 @@ if [ -n "${DEBUG_SCRIPT:-}" ]; then
 fi
 set -eu -o pipefail
 
+# Helper functions for safe logging operations when running as non-root user.
+# These functions handle log file access permissions by using sudo when necessary.
+
+# Check if the script is running as root (UID 0).
+is_root() {
+  [ "$(id -u)" -eq 0 ]
+}
+
+# Create /var/log/etcd.log with permissive permissions (0666) so non-root users can write.
+# Uses sudo if the script is not running as root.
+ensure_log_file() {
+  local log_file="${1:-/var/log/etcd.log}"
+  if is_root; then
+    touch "$log_file"
+    chmod 0666 "$log_file"
+  else
+    sudo touch "$log_file"
+    sudo chmod 0666 "$log_file"
+  fi
+}
+
+# Append a single line to a log file using tee.
+# Uses sudo tee if the script is not running as root.
+# Example: log_append "Starting etcd service..."
+log_append() {
+  local message="$1"
+  local log_file="${2:-/var/log/etcd.log}"
+  if is_root; then
+    echo "$message" | tee -a "$log_file" >/dev/null
+  else
+    echo "$message" | sudo tee -a "$log_file" >/dev/null
+  fi
+}
+
+# Run an arbitrary command as root using bash -c.
+# This ensures shell redirections in the command run with root privileges.
+# Uses sudo bash -c if the script is not running as root.
+# Example: run_as_root "etcd --data-dir=/var/lib/etcd >/var/log/etcd.log 2>&1 &"
+run_as_root() {
+  local cmd="$1"
+  if is_root; then
+    bash -c "$cmd"
+  else
+    sudo bash -c "$cmd"
+  fi
+}
+
 # Install APT packages.
 if ! command -v milvus >/dev/null 2>&1; then
+  # Ensure log file exists with proper permissions before any redirections occur.
+  ensure_log_file /var/log/etcd.log
+  
   sudo apt-get update
   ARCH=$(dpkg --print-architecture)
   
@@ -46,10 +96,11 @@ if ! command -v milvus >/dev/null 2>&1; then
       sudo cp "$APP_ROOT/.devpanel/milvus/etcd.conf" /etc/supervisor/conf.d/etcd.conf
     fi
     # Start etcd directly after install. (Supervisor will manage on next restart.)
-    sudo setsid etcd --data-dir=/var/lib/etcd \
+    # Use run_as_root to ensure shell redirections run with root privileges.
+    run_as_root "setsid etcd --data-dir=/var/lib/etcd \
       --listen-client-urls=http://127.0.0.1:2379 \
       --advertise-client-urls=http://127.0.0.1:2379 \
-      --listen-peer-urls=http://127.0.0.1:2380 </dev/null >/var/log/etcd.log 2>&1 &
+      --listen-peer-urls=http://127.0.0.1:2380 </dev/null >/var/log/etcd.log 2>&1 &"
     # Wait for etcd to be ready.
     echo "Waiting for etcd to be ready..."
     for i in {1..30}; do
@@ -94,7 +145,8 @@ if ! command -v milvus >/dev/null 2>&1; then
     sudo cp "$APP_ROOT/.devpanel/milvus/milvus.conf" /etc/supervisor/conf.d/milvus.conf
   fi
   # Start Milvus directly after install. (Supervisor will manage Milvus on next container restart.)
-  cd / && sudo setsid bash -c "MILVUSCONF=/etc/milvus/configs/ /usr/bin/milvus run standalone" </dev/null >/var/log/milvus.out.log 2>/var/log/milvus.err.log &
+  # Use run_as_root to ensure shell redirections run with root privileges.
+  run_as_root "cd / && setsid bash -c 'MILVUSCONF=/etc/milvus/configs/ /usr/bin/milvus run standalone' </dev/null >/var/log/milvus.out.log 2>/var/log/milvus.err.log &"
   # Wait for Milvus to be ready.
   echo "Waiting for Milvus to be ready..."
   for i in {1..60}; do
