@@ -1,0 +1,7 @@
+# Install supervisord-dependent-startup for proper service dependencies
+RUN apt-get update && apt-get install -y python3-pip && \
+    pip3 install supervisord-dependent-startup --break-system-packages && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Copy dependent startup supervisor config
+COPY supervisor/dependent-startup.conf /etc/supervisor/conf.d/dependent-startup.conf

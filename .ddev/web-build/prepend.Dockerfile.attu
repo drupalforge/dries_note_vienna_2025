@@ -1,0 +1,1 @@
+FROM zilliz/attu:v2.3.10 AS attu

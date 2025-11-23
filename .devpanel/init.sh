@@ -8,6 +8,39 @@ cd $APP_ROOT
 LOG_FILE="logs/init-$(date +%F-%T).log"
 exec > >(tee $LOG_FILE) 2>&1
 
+# Diagnostic checks for /etc/hosts
+if [ ! -e /etc/hosts ]; then
+  echo "/etc/hosts does not exist"
+else
+  echo "/etc/hosts exists:"
+  ls -lhA /etc/hosts || echo "ls failed: $?"
+  [ -w /etc/hosts ] && echo "/etc/hosts is writable" || echo "/etc/hosts is NOT writable (owner: $(stat -c "%U:%G" /etc/hosts))"
+  cat /etc/hosts || echo "cat failed: $?"
+
+  # Add service hostnames to localhost lines in /etc/hosts if not already present
+  echo "Checking hostname resolution..."
+  for host in etcd minio milvus attu; do
+    # Check grep first (faster), only run getent if grep fails
+    timeout 1 grep -q "$host" /etc/hosts
+    grep_result=$?
+    if [ $grep_result -eq 0 ]; then
+      echo "$host found in /etc/hosts"
+    elif [ $grep_result -eq 124 ]; then
+      echo "$host grep timed out, skipping"
+    elif timeout 2 getent hosts "$host" >/dev/null 2>&1; then
+      echo "$host resolves via getent"
+    else
+      echo "Adding $host to /etc/hosts"
+      if sudo sed -i "/localhost/s/$/ $host/" /etc/hosts; then
+        echo "$host added successfully"
+      else
+        echo "Failed to add $host (possibly read-only), continuing..."
+      fi
+    fi
+  done
+  echo "Hostname configuration complete"
+fi
+
 TIMEFORMAT=%lR
 # For faster performance, don't audit dependencies automatically.
 export COMPOSER_NO_AUDIT=1
