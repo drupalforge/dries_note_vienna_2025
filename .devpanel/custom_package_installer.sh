@@ -16,8 +16,7 @@ set -eu -o pipefail
 # --- sudo-safe logging helpers -------------------------------------------------
 # Use these helpers to avoid the common "sudo + shell redirection" pitfall.
 # They:
-#  - ensure /var/log/etcd.log exists and is writable (using sudo when needed)
-#  - provide log_append for single-line appends
+#  - ensure log files exist and are writable (using sudo when needed)
 #  - provide run_as_root for running full commands with redirections under root
 
 is_root() {
@@ -25,26 +24,18 @@ is_root() {
 }
 
 ensure_log_file() {
+  local log_file="$1"
   if is_root; then
-    mkdir -p /var/log
-    touch /var/log/etcd.log
-    chmod 0666 /var/log/etcd.log || true
+    mkdir -p "$(dirname "$log_file")"
+    touch "$log_file"
+    chmod 0666 "$log_file" || true
   else
     if command -v sudo >/dev/null 2>&1; then
-      sudo bash -c 'mkdir -p /var/log; touch /var/log/etcd.log; chmod 0666 /var/log/etcd.log || true'
+      sudo bash -c "mkdir -p \"$(dirname "$log_file")\"; touch \"$log_file\"; chmod 0666 \"$log_file\" || true"
     else
-      echo "ERROR: sudo required to create /var/log/etcd.log" >&2
+      echo "ERROR: sudo required to create $log_file" >&2
       exit 1
     fi
-  fi
-}
-
-log_append() {
-  local msg="$1"
-  if is_root; then
-    echo "$msg" | tee -a /var/log/etcd.log >/dev/null
-  else
-    echo "$msg" | sudo tee -a /var/log/etcd.log >/dev/null
   fi
 }
 
@@ -56,8 +47,10 @@ run_as_root() {
   fi
 }
 
-# Ensure the log file exists and is writable before any redirections are attempted.
-ensure_log_file
+# Ensure log files exist and are writable before any redirections are attempted.
+ensure_log_file /var/log/etcd.log
+ensure_log_file /var/log/milvus.out.log
+ensure_log_file /var/log/milvus.err.log
 
 # Install APT packages.
 if ! command -v milvus >/dev/null 2>&1; then
