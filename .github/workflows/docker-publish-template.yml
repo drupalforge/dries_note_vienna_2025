@@ -18,10 +18,14 @@ jobs:
       - name: Install required PHP XML extension
         run: |
           sudo apt-get update
-          if ! sudo apt-get install -y php-xml; then
-            echo "php-xml not found, trying versioned packages..."
-            sudo apt-get install -y php8.1-xml || sudo apt-get install -y php8.2-xml || sudo apt-get install -y php8.3-xml || echo "Warning: Could not install PHP XML extension"
-          fi
+          # Try packages in order of preference
+          for pkg in php-xml php8.3-xml php8.2-xml php8.1-xml; do
+            if sudo apt-get install -y "$pkg" 2>/dev/null; then
+              echo "Successfully installed $pkg"
+              exit 0
+            fi
+          done
+          echo "Warning: Could not install PHP XML extension"
 
       - name: Start services with docker-compose
         run: |
@@ -54,7 +58,9 @@ jobs:
           check_http() {
             url="$1"
             name="$2"
-            for i in $(seq 1 $MAX_RETRIES); do
+            i=0
+            while [ $i -lt $MAX_RETRIES ]; do
+              i=$((i + 1))
               if curl -fsS --max-time 5 "$url" >/dev/null 2>&1; then
                 echo "${name} is healthy"
                 return 0
@@ -96,12 +102,27 @@ jobs:
           if [ -f docker-compose.yml ]; then
             docker-compose -f docker-compose.yml down --remove-orphans --volumes --timeout 30 || true
           fi
-          # Stop any remaining containers and remove networks dynamically
-          for network in $(docker network ls --filter "name=github_network" --format "{{.Name}}"); do
-            docker ps -q --filter "network=$network" | xargs -r docker stop || true
-            sleep 3
-            docker network rm "$network" || true
-          done
+          # Get all github_network* networks
+          networks=$(docker network ls --filter "name=github_network" --format "{{.Name}}" 2>/dev/null || true)
+          if [ -n "$networks" ]; then
+            # Collect and stop unique containers from all networks
+            containers_to_stop=""
+            for network in $networks; do
+              container_ids=$(docker ps -q --filter "network=$network" 2>/dev/null || true)
+              if [ -n "$container_ids" ]; then
+                containers_to_stop="$containers_to_stop $container_ids"
+              fi
+            done
+            # Stop unique containers
+            if [ -n "$containers_to_stop" ]; then
+              echo "$containers_to_stop" | tr ' ' '\n' | sort -u | xargs -r docker stop || true
+              sleep 3
+            fi
+            # Remove networks
+            for network in $networks; do
+              docker network rm "$network" || true
+            done
+          fi
 
   build-application:
     needs: setup-environment
