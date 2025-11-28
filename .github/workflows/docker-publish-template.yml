@@ -9,7 +9,91 @@ on:
 permissions:
   actions: write
 jobs:
+  setup-environment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install required PHP XML extension
+        run: |
+          sudo apt-get update && sudo apt-get install -y php-xml || sudo apt-get install -y php8.1-xml php8.2-xml || true
+
+      - name: Start services with docker-compose
+        run: |
+          if [ -f docker-compose.yml ]; then
+            docker-compose up -d
+          fi
+
+      - name: Diagnostic logs after docker-compose up
+        run: |
+          echo "--- Diagnostic: docker ps ---"
+          docker ps --format 'table {{.ID}}\t{{.Image}}\t{{.Names}}\t{{.Status}}'
+          echo ""
+          echo "--- Diagnostic: docker-compose ps ---"
+          docker-compose ps || true
+          echo ""
+          echo "--- Diagnostic: container logs (tail 200) ---"
+          for container in $(docker ps -q); do
+            echo "=== Logs for container $(docker inspect --format '{{.Name}}' $container) ==="
+            docker logs --tail 200 "$container" 2>&1 || true
+          done
+
+      - name: Wait for etcd and MinIO (with logs on failure)
+        run: |
+          set -euo pipefail
+          check_http() {
+            url="$1"
+            name="$2"
+            for i in $(seq 1 120); do
+              if curl -fsS --max-time 5 "$url" >/dev/null 2>&1; then
+                echo "${name} is healthy"
+                return 0
+              fi
+              sleep 5
+            done
+            return 1
+          }
+
+          echo "--- Diagnostic: containers and compose status ---"
+          docker ps --format 'table {{.ID}}\t{{.Image}}\t{{.Names}}\t{{.Status}}'
+          docker-compose ps || true
+
+          # etcd health: try etcdctl first if present
+          if command -v etcdctl >/dev/null 2>&1; then
+            if ! etcdctl --endpoints="http://localhost:2379" endpoint health --write-out=table >/dev/null 2>&1; then
+              echo "etcdctl health check failed"
+              docker logs etcd --tail 200 || true
+              exit 1
+            fi
+          else
+            if ! check_http "http://localhost:2379/health" "etcd"; then
+              echo "etcd HTTP health check failed"
+              docker logs etcd --tail 200 || true
+              exit 1
+            fi
+          fi
+
+          if ! check_http "http://localhost:9000/minio/health/live" "minio"; then
+            echo "MinIO health check failed"
+            docker logs minio --tail 200 || true
+            exit 1
+          fi
+
+      - name: Cleanup containers and networks
+        if: always()
+        run: |
+          set -euo pipefail
+          if [ -f docker-compose.yml ]; then
+            docker-compose -f docker-compose.yml down --remove-orphans --volumes --timeout 30 || true
+          fi
+          # Ensure no containers remain on the GitHub network
+          docker ps -q --filter network=github_network_abd0c0275fcb47e8b76efb9a5f83c9f3 | xargs -r docker stop || true
+          sleep 3
+          docker network rm github_network_abd0c0275fcb47e8b76efb9a5f83c9f3 || true
+
   build-application:
+    needs: setup-environment
     uses: drupalforge/docker_publish_action/.github/workflows/docker-publish.yml@dries_note_vienna_2025
     with:
       dockerhub_username: ${{ vars.DOCKERHUB_USERNAME }}
