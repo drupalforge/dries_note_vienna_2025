@@ -1,0 +1,13 @@
+diff --git a/src/Plugin/VdbProvider/MilvusProvider.php b/src/Plugin/VdbProvider/MilvusProvider.php
+index 718fce4..a729b4a 100644
+--- a/src/Plugin/VdbProvider/MilvusProvider.php
++++ b/src/Plugin/VdbProvider/MilvusProvider.php
+@@ -405,7 +405,7 @@ class MilvusProvider extends AiVdbProviderClientBase implements ContainerFactory
+       $results['ddev_ui'] = [
+         'label' => $this->t('Milvus DDEV UI'),
+         'info' => $this->t('<a href="@milvus" target="_blank">Milvus DDEV UI</a>', [
+-          '@milvus' => 'https://' . $this->request->getHost() . ':8521',
++          '@milvus' => '/attu',
+         ]),
+       ];
+     }
