@@ -42,13 +42,10 @@ cat /etc/hosts || echo "Cannot read /etc/hosts" >&2
 check_etcd() {
   echo "Checking etcd health..." >&2
   for i in {1..60}; do
-    echo "  Attempt $i: Testing etcdctl endpoint health..." >&2
-    if etcdctl --endpoints=http://127.0.0.1:2379 endpoint health 2>&1; then
-      echo "✓ etcd is healthy" >&2
+    if etcdctl --endpoints=http://127.0.0.1:2379 endpoint health >/dev/null 2>&1; then
+      echo "✓ etcd is healthy (attempt $i)" >&2
       return 0
     fi
-    echo "  Attempt $i failed, checking if etcd process is running..." >&2
-    ps aux | grep -v grep | grep etcd >&2 || echo "  No etcd process found" >&2
     if [ $i -eq 60 ]; then
       echo "✗ etcd health check failed after 60 attempts" >&2
       echo "Final etcd process check:" >&2
@@ -64,13 +61,10 @@ check_etcd() {
 check_minio() {
   echo "Checking MinIO health..." >&2
   for i in {1..60}; do
-    echo "  Attempt $i: Testing MinIO health endpoint..." >&2
-    if curl -v -f http://127.0.0.1:9000/minio/health/live 2>&1; then
-      echo "✓ MinIO is healthy" >&2
+    if curl -s -f http://127.0.0.1:9000/minio/health/live >/dev/null 2>&1; then
+      echo "✓ MinIO is healthy (attempt $i)" >&2
       return 0
     fi
-    echo "  Attempt $i failed, checking if minio process is running..." >&2
-    ps aux | grep -v grep | grep minio >&2 || echo "  No minio process found" >&2
     if [ $i -eq 60 ]; then
       echo "✗ MinIO health check failed after 60 attempts" >&2
       echo "Final minio process check:" >&2
@@ -86,13 +80,10 @@ check_minio() {
 check_milvus() {
   echo "Checking Milvus health..." >&2
   for i in {1..90}; do
-    echo "  Attempt $i: Testing Milvus health endpoint..." >&2
-    if curl -v -f http://127.0.0.1:9091/healthz 2>&1; then
-      echo "✓ Milvus is healthy" >&2
+    if curl -s -f http://127.0.0.1:9091/healthz >/dev/null 2>&1; then
+      echo "✓ Milvus is healthy (attempt $i)" >&2
       return 0
     fi
-    echo "  Attempt $i failed, checking if milvus process is running..." >&2
-    ps aux | grep -v grep | grep milvus >&2 || echo "  No milvus process found" >&2
     if [ $i -eq 90 ]; then
       echo "✗ Milvus health check failed after 90 attempts" >&2
       echo "Final milvus process check:" >&2
