@@ -7,7 +7,7 @@ set -eu -o pipefail
 cd $APP_ROOT
 
 # Create required composer.json and composer.lock files.
-git clone --depth 1 https://github.com/FreelyGive/v2025demo.git
+git clone --depth 1 --quiet https://github.com/FreelyGive/v2025demo.git
 rm v2025demo/composer.lock v2025demo/LICENSE.txt
 cp -rn v2025demo/* ./
 rm -rf v2025demo

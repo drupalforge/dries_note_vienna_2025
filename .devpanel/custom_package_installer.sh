@@ -15,21 +15,21 @@ set -eu -o pipefail
 
 # Install APT packages.
 if ! command -v npm >/dev/null 2>&1; then
-  sudo apt-get update
-  sudo apt-get install -y jq nano npm
+  sudo apt-get update -qq
+  sudo apt-get install -y -qq jq nano npm
 fi
 
 # Enable AVIF support in GD extension if not already enabled.
 if [ -z "$(php --ri gd | grep AVIF)" ]; then
-  sudo apt-get install -y libavif-dev
+  sudo apt-get install -y -qq libavif-dev
   sudo docker-php-ext-configure gd --with-avif --with-freetype --with-jpeg --with-webp
   sudo docker-php-ext-install gd
   # Mark runtime libraries as manually installed, then purge dev package to reduce image size
   for pkg in $(apt-cache depends libavif-dev | grep '^\s*Depends:' | grep -o 'libavif[^, ]*'); do
     sudo apt-mark manual "$pkg"
   done
-  sudo apt-get purge -y libavif-dev
-  sudo apt-get autoremove -y
+  sudo apt-get purge -y -qq libavif-dev
+  sudo apt-get autoremove -y -qq
 fi
 
 PECL_UPDATED=false
