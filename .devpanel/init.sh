@@ -8,24 +8,6 @@ cd $APP_ROOT
 LOG_FILE="logs/init-$(date +%F-%T).log"
 exec > >(tee $LOG_FILE) 2>&1
 
-# Add service hostnames to localhost lines in /etc/hosts if not already present
-for host in etcd minio milvus attu; do
-  # Check grep first (faster), only run getent if grep fails
-  if grep -q "$host" /etc/hosts; then
-    echo "$host found in /etc/hosts"
-  elif timeout 2 getent hosts "$host" >/dev/null 2>&1; then
-    echo "$host resolves via getent"
-  else
-    echo "Adding $host to /etc/hosts"
-    if sed "/localhost/s/$/ $host/" /etc/hosts | sudo tee /etc/hosts > /dev/null; then
-      echo "$host added successfully"
-    else
-      echo "Failed to add $host to /etc/hosts"
-      exit 1
-    fi
-  fi
-done
-
 TIMEFORMAT=%lR
 # For faster performance, don't audit dependencies automatically.
 export COMPOSER_NO_AUDIT=1
