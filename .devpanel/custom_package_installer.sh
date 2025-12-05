@@ -15,8 +15,12 @@ set -eu -o pipefail
 
 # Install APT packages.
 if ! command -v npm >/dev/null 2>&1; then
-  sudo apt-get update -qq
-  sudo apt-get install -y -qq jq nano npm
+  # If DEBIAN_FRONTEND is set to noninteractive, this is likely a Docker build
+  # and apt-get update has already run.
+  if [ "${DEBIAN_FRONTEND:-}" != "noninteractive" ]; then
+    sudo apt-get update -qq
+  fi
+  sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq jq nano npm
 fi
 
 # Enable AVIF support in GD extension if not already enabled.
