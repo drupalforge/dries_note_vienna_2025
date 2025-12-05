@@ -1,9 +1,5 @@
 services:
   web:
-    volumes:
-      - ./milvus/volumes/etcd:/etcd
-      - ./milvus/volumes/minio:/minio_data
-      - ./milvus/volumes/milvus:/var/lib/milvus
     extra_hosts:
       - "etcd:127.0.0.1"
       - "minio:127.0.0.1"

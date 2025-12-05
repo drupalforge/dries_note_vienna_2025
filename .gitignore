@@ -1,6 +1,5 @@
-/.ddev/.env
-/.ddev/milvus/
 /.devpanel/dumps/
+/.devpanel/milvus/
 /.devpanel/salt.txt
 /.editorconfig
 /.gitattributes

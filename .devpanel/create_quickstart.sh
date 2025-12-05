@@ -43,3 +43,13 @@ tar czf $DUMPS_DIR/files.tgz -C $STATIC_FILES_DIR .
 echo -e "> Store files.tgz to $APP_ROOT/.devpanel/dumps"
 mkdir -p $APP_ROOT/.devpanel/dumps
 mv $DUMPS_DIR/files.tgz $APP_ROOT/.devpanel/dumps/files.tgz
+
+# Step 3 - Archive Milvus volumes
+echo -e "> Archive Milvus volumes"
+MILVUS_VOL_DIR="$APP_ROOT/.devpanel/milvus/volumes"
+if [ -d "$MILVUS_VOL_DIR" ]; then
+	tar czf $APP_ROOT/.devpanel/dumps/milvus.tgz -C "$MILVUS_VOL_DIR" .
+	echo -e "> Saved Milvus archive to $APP_ROOT/.devpanel/dumps/milvus.tgz"
+else
+	echo -e "> Milvus volumes directory not found: $MILVUS_VOL_DIR"
+fi

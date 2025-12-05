@@ -39,3 +39,13 @@ echo
 echo 'Populate caches.'
 drush cache:warm &> /dev/null || :
 $APP_ROOT/.devpanel/warm
+
+# Restore Milvus volumes from archive if present
+MILVUS_VOL_DIR="$APP_ROOT/.devpanel/milvus/volumes"
+MILVUS_ARCHIVE="$APP_ROOT/.devpanel/dumps/milvus.tgz"
+if [ -f "$MILVUS_ARCHIVE" ]; then
+  echo 'Restoring Milvus volumes from archive...'
+  mkdir -p "$MILVUS_VOL_DIR"
+  rm -rf "$MILVUS_VOL_DIR"/*
+  tar xzf "$MILVUS_ARCHIVE" -C "$MILVUS_VOL_DIR"
+fi
