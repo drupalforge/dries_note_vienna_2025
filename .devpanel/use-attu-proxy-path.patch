@@ -1,12 +1,19 @@
 diff --git a/src/Plugin/VdbProvider/MilvusProvider.php b/src/Plugin/VdbProvider/MilvusProvider.php
-index 718fce4..a729b4a 100644
+index 718fce4..f0638ca 100644
 --- a/src/Plugin/VdbProvider/MilvusProvider.php
 +++ b/src/Plugin/VdbProvider/MilvusProvider.php
-@@ -405,7 +405,7 @@ class MilvusProvider extends AiVdbProviderClientBase implements ContainerFactory
+@@ -401,11 +401,11 @@ class MilvusProvider extends AiVdbProviderClientBase implements ContainerFactory
+       }
+     }
+ 
+-    if (getenv('IS_DDEV_PROJECT') == 'true' && !$this->getClient()->isZilliz()) {
++    if (getenv('DP_APP_ID') !== FALSE && !$this->getClient()->isZilliz()) {
        $results['ddev_ui'] = [
-         'label' => $this->t('Milvus DDEV UI'),
-         'info' => $this->t('<a href="@milvus" target="_blank">Milvus DDEV UI</a>', [
+-        'label' => $this->t('Milvus DDEV UI'),
+-        'info' => $this->t('<a href="@milvus" target="_blank">Milvus DDEV UI</a>', [
 -          '@milvus' => 'https://' . $this->request->getHost() . ':8521',
++        'label' => $this->t('Milvus Drupal Forge UI'),
++        'info' => $this->t('<a href="@milvus" target="_blank">Milvus Drupal Forge UI</a>', [
 +          '@milvus' => '/attu',
          ]),
        ];
