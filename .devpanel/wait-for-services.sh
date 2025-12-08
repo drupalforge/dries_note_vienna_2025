@@ -51,7 +51,7 @@ check_etcd() {
       echo "Final etcd process check:" >&2
       ps aux | grep etcd >&2
       echo "Final etcd logs:" >&2
-      sudo tail -50 /var/log/etcd.*.log 2>&1 >&2 || echo "No etcd logs found" >&2
+      sudo tail -n 50 /var/log/etcd.*.log 2>&1 >&2 || echo "No etcd logs found" >&2
       return 1
     fi
     sleep 1
@@ -70,7 +70,7 @@ check_minio() {
       echo "Final minio process check:" >&2
       ps aux | grep minio >&2
       echo "Final minio logs:" >&2
-      sudo tail -50 /var/log/minio.*.log 2>&1 >&2 || echo "No minio logs found" >&2
+      sudo tail -n 50 /var/log/minio.*.log 2>&1 >&2 || echo "No minio logs found" >&2
       return 1
     fi
     sleep 1
@@ -89,7 +89,7 @@ check_milvus() {
       echo "Final milvus process check:" >&2
       ps aux | grep milvus >&2
       echo "Final milvus logs:" >&2
-      sudo tail -50 /var/log/milvus.*.log 2>&1 >&2 || echo "No milvus logs found" >&2
+      sudo tail -n 50 /var/log/milvus.*.log 2>&1 >&2 || echo "No milvus logs found" >&2
       return 1
     fi
     sleep 1
@@ -110,7 +110,7 @@ check_attu() {
       echo "Final supervisorctl status:" >&2
       sudo supervisorctl status attu >&2 || echo "supervisorctl failed" >&2
       echo "Final attu logs:" >&2
-      sudo tail -50 /var/log/attu.*.log 2>&1 >&2 || echo "No attu logs found" >&2
+      sudo tail -n 50 /var/log/attu.*.log 2>&1 >&2 || echo "No attu logs found" >&2
       return 1
     fi
     sleep 1
