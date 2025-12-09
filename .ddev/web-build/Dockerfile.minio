@@ -1,8 +1,5 @@
 # Copy MinIO binary from the correct location
 COPY --from=minio /opt/bin/minio /usr/bin/minio
 
-# Create MinIO data directory
-RUN mkdir -p /minio_data && chown -R $username:$username /minio_data
-
 # Copy Supervisor config for MinIO service
 COPY supervisor/minio.conf /etc/supervisor/conf.d/minio.conf

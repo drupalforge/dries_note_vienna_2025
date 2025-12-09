@@ -16,7 +16,6 @@
 # ----------------------------------------------------------------------
 
 STATIC_FILES_PATH="$WEB_ROOT/sites/default/files/"
-SETTINGS_FILES_PATH="$WEB_ROOT/sites/default/settings.php"
 
 #Create static directory
 if [ ! -d "$STATIC_FILES_PATH" ]; then

@@ -8,13 +8,10 @@ RUN apt-get update && apt-get install -y \
 # Copy entire Milvus directory structure to preserve paths
 COPY --from=milvus /milvus /milvus
 
-# Create Milvus data directory with proper permissions
-RUN mkdir -p /var/lib/milvus && \
-    chown -R $username:$username /var/lib/milvus && \
-    chmod +x /milvus/bin/milvus
-
 # Update library path for Milvus libraries
-RUN echo "/milvus/lib" > /etc/ld.so.conf.d/milvus.conf && ldconfig
+RUN echo "/milvus/lib" > /etc/ld.so.conf.d/milvus.conf && \
+    ldconfig && \
+    chmod +x /milvus/bin/milvus
 
 # Copy Supervisor config for milvus service
 COPY supervisor/milvus.conf /etc/supervisor/conf.d/milvus.conf
