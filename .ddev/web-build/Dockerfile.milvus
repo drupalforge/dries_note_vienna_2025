@@ -8,6 +8,9 @@ RUN apt-get update && apt-get install -y \
 # Copy entire Milvus directory structure to preserve paths
 COPY --from=milvus /milvus /milvus
 
+# Create symbolic link for data directory
+RUN ln -sf /var/www/html/.devpanel/milvus/volumes/milvus /var/lib/milvus
+
 # Update library path for Milvus libraries
 RUN echo "/milvus/lib" > /etc/ld.so.conf.d/milvus.conf && \
     ldconfig && \
