@@ -49,3 +49,11 @@ fi
 if $PECL_UPDATED && sudo /etc/init.d/apache2 status > /dev/null; then
   sudo /etc/init.d/apache2 reload
 fi
+
+# Install VSCode Extensions
+if [ -n "${DP_VSCODE_EXTENSIONS:-}" ]; then
+  IFS=','
+  for value in $DP_VSCODE_EXTENSIONS; do
+    time code-server --install-extension $value
+  done
+fi

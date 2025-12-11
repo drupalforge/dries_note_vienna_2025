@@ -12,14 +12,6 @@ TIMEFORMAT=%lR
 # For faster performance, don't audit dependencies automatically.
 export COMPOSER_NO_AUDIT=1
 
-# Install VSCode Extensions
-if [ -n "${DP_VSCODE_EXTENSIONS:-}" ]; then
-  IFS=','
-  for value in $DP_VSCODE_EXTENSIONS; do
-    time code-server --install-extension $value
-  done
-fi
-
 #== Remove root-owned files.
 echo
 echo Remove root-owned files.

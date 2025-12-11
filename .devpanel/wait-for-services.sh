@@ -98,13 +98,13 @@ check_milvus() {
 
 check_attu() {
   echo "Checking Attu health..." >&2
-  for i in {1..60}; do
+  for i in {1..150}; do
     if curl -s -f http://127.0.0.1:3000 >/dev/null 2>&1; then
       echo "✓ Attu is healthy (attempt $i)" >&2
       return 0
     fi
-    if [ $i -eq 60 ]; then
-      echo "✗ Attu health check failed after 60 attempts" >&2
+    if [ $i -eq 150 ]; then
+      echo "✗ Attu health check failed after 150 attempts" >&2
       echo "Final attu process check:" >&2
       ps aux | grep attu >&2
       echo "Final supervisorctl status:" >&2
