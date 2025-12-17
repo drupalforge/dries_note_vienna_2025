@@ -4,13 +4,18 @@
 # You do not need this file if your template provides its own composer.json.
 
 set -eu -o pipefail
-cd $APP_ROOT
+cd "$APP_ROOT"
 
 # Create required composer.json and composer.lock files.
 git clone --depth 1 --quiet https://github.com/FreelyGive/v2025demo.git
 rm v2025demo/composer.lock v2025demo/LICENSE.txt
 cp -rn v2025demo/* ./
 rm -rf v2025demo
+
+# Remove the 'Add content export' patch from extra.patches.drupal/core using composer config
+current=$(composer config --json extra.patches.drupal/core || echo '{}')
+new=$(echo "$current" | jq 'del(."Add content export")')
+composer config -j extra.patches.drupal/core "$new"
 
 # Programmatically fix Composer 2.2 allow-plugins to avoid errors.
 composer config --no-plugins allow-plugins.tbachert/spi false
