@@ -19,6 +19,7 @@ hooks:
         - exec: .devpanel/init.sh
 use_dns_when_possible: true
 composer_version: "2"
+disable_settings_management: true
 web_environment:
     # Set up DevPanel variables.
     - APP_ROOT=$DDEV_COMPOSER_ROOT

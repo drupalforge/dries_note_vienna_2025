@@ -8,7 +8,8 @@ cd "$APP_ROOT"
 
 # Create required composer.json and composer.lock files.
 git clone --depth 1 --quiet https://github.com/FreelyGive/v2025demo.git
-rm v2025demo/composer.lock v2025demo/LICENSE.txt
+git apply --directory=v2025demo .devpanel/patches/FreelyGive/v2025demo/sdc.patch
+rm -rf v2025demo/composer.lock v2025demo/LICENSE.txt v2025demo/byte v2025demo/recipes
 cp -rn v2025demo/* ./
 rm -rf v2025demo
 
@@ -31,6 +32,13 @@ composer config -jm extra.drupal-scaffold.file-mapping '{
 }'
 composer config scripts.post-drupal-scaffold-cmd \
     'cd web/sites/default && test -z "$(grep '\''include \$devpanel_settings;'\'' settings.php)" && patch -Np1 -r /dev/null < $APP_ROOT/.devpanel/drupal-settings.patch || :'
+
+# Remove the local repositories.
+composer config --unset repositories
+composer config repositories.drupal '{
+    "type": "composer",
+    "url": "https://packages.drupal.org/8"
+}'
 
 # Add repositories for Webform libraries.
 composer config repositories.tippyjs '{

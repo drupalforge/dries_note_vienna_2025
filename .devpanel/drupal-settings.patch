@@ -2,7 +2,7 @@ diff --git a/settings.php b/settings.php
 index e121075454f..9b0d970f3e8 100644
 --- a/settings.php
 +++ b/settings.php
-@@ -830,6 +830,14 @@
+@@ -842,6 +842,14 @@
  # $settings['migrate_file_public_path'] = '';
  # $settings['migrate_file_private_path'] = '';
  

@@ -17,7 +17,12 @@
 /logs/*
 /MAINTAINERS.txt
 /MODULES.md
-/patches/
+/patches/*
+!/patches/canvas/
+/patches/canvas/*
+!/patches/canvas/block-selection.patch
+!/patches/canvas/hidden-components.patch
+!/patches/canvas/template-agent.patch
 /patches.lock.json
 /private/
 /project_template/
