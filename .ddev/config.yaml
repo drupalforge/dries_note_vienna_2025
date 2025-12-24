@@ -12,10 +12,9 @@ hooks:
     post-start:
         # Set up debugging.
         - exec: test -f .vscode/launch.json || mkdir -p .vscode && cp .ddev/launch.json .vscode/
-        # Run initial setup tasks.
-        - exec: .devpanel/custom_package_installer.sh
         # Wait for Milvus services to be healthy.
         - exec: .devpanel/wait-for-services.sh
+        # Run initial setup tasks.
         - exec: .devpanel/init.sh
 use_dns_when_possible: true
 composer_version: "2"
@@ -24,6 +23,8 @@ web_environment:
     # Set up DevPanel variables.
     - APP_ROOT=$DDEV_COMPOSER_ROOT
     - WEB_ROOT=$DDEV_COMPOSER_ROOT/$DDEV_DOCROOT
+    - APACHE_RUN_USER=$DDEV_USER
+    - APACHE_RUN_GROUP=$DDEV_USER
     - DB_HOST=db
     - DB_PORT=3306
     - DB_USER=db

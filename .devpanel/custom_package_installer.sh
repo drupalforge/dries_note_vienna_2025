@@ -57,3 +57,38 @@ if [ -n "${DP_VSCODE_EXTENSIONS:-}" ]; then
     time code-server --install-extension $value
   done
 fi
+
+# Add service hostnames to /etc/hosts if not already present
+for host in etcd minio milvus attu; do
+  if grep -q "$host" /etc/hosts; then
+    echo "$host found in /etc/hosts"
+  elif timeout 2 getent hosts "$host" >/dev/null 2>&1; then
+    echo "$host resolves via getent"
+  else
+    echo "Adding $host to /etc/hosts"
+    if sed "/localhost/s/$/ $host/" /etc/hosts | sudo tee /etc/hosts; then
+      echo "$host added successfully"
+    else
+      echo "Failed to add $host to /etc/hosts"
+      exit 1
+    fi
+  fi
+done
+
+# Ensure Milvus, Minio, and Etcd volume directories exist
+sudo mkdir -p "$APP_ROOT/.devpanel/milvus/volumes/milvus" \
+         "$APP_ROOT/.devpanel/milvus/volumes/minio" \
+         "$APP_ROOT/.devpanel/milvus/volumes/etcd" \
+         "$WEB_ROOT" \
+         /run/milvus
+sudo chmod go-rwx "$APP_ROOT/.devpanel/milvus/volumes/etcd"
+
+if [ "${IS_DDEV_PROJECT:-false}" != "true" ]; then
+  # Set ownership of Milvus volume directories
+  sudo chown -R $APACHE_RUN_USER:$APACHE_RUN_GROUP \
+    "$APP_ROOT" \
+    /run/milvus
+
+  # Start supervisord only when not in DDEV, in background mode
+  sudo -E /usr/bin/supervisord -c /etc/supervisor/supervisord.conf
+fi
