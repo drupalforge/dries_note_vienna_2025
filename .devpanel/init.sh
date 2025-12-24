@@ -58,19 +58,29 @@ fi
 echo
 if [ -z "$(drush status --field=db-status)" ]; then
   echo 'Install Drupal.'
-  # For some reason, writable directories are sometimes detected as not
-  # writable, so loop until it works.
-  until time drush -n si drupal_cms_installer installer_site_template_form.add_ons=byte; do
-    :
-  done
+  if ${IS_DDEV_PROJECT:-false}; then
+    # For some reason, writable directories are sometimes detected as not
+    # writable, so loop until it works.
+    until time drush -n si drupal_cms_installer installer_site_template_form.add_ons=byte; do
+      :
+    done
+  else
+    time drush -n si drupal_cms_installer installer_site_template_form.add_ons=byte
+  fi
   time drush cr
   echo 'Apply Canvas AI Setup recipe.'
   time drush -q recipe ../custom_recipes/canvas_ai_setup
   time drush cr
   echo 'Apply Media Images recipe.'
-  until time drush -q recipe ../custom_recipes/media_images; do
-    :
-  done
+  if ${IS_DDEV_PROJECT:-false}; then
+    # For some reason, writable directories are sometimes detected as not
+    # writable, so loop until it works.
+    until time drush -q recipe ../custom_recipes/media_images; do
+      :
+    done
+  else
+    time drush -q recipe ../custom_recipes/media_images
+  fi
   echo 'Apply Mercury Demo Page recipe.'
   time drush -q recipe ../custom_recipes/new_canvas_page
   time drush cr
