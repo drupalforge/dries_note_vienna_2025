@@ -81,14 +81,15 @@ sudo mkdir -p "$APP_ROOT/.devpanel/milvus/volumes/milvus" \
          "$APP_ROOT/.devpanel/milvus/volumes/etcd" \
          "$WEB_ROOT" \
          /run/milvus
-sudo chmod go-rwx "$APP_ROOT/.devpanel/milvus/volumes/etcd"
+
+# Set ownership of Milvus volume directories
+sudo chown -R $APACHE_RUN_USER:$APACHE_RUN_GROUP \
+  "$APP_ROOT" \
+  /run/milvus
+
+chmod go-rwx "$APP_ROOT/.devpanel/milvus/volumes/etcd"
 
 if [ "${IS_DDEV_PROJECT:-false}" != "true" ]; then
-  # Set ownership of Milvus volume directories
-  sudo chown -R $APACHE_RUN_USER:$APACHE_RUN_GROUP \
-    "$APP_ROOT" \
-    /run/milvus
-
   # Start supervisord only when not in DDEV, in background mode
   sudo -E /usr/bin/supervisord -c /etc/supervisor/supervisord.conf
 fi
