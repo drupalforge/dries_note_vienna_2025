@@ -10,8 +10,7 @@
             "#3531174: Fix value type for include_unknown_files_in_project_root": ".devpanel/patches/drupal/drupal_cms_admin_ui/3531174-include_unknown_files_in_project_root.patch"
         },
         "drupal/core": {
-            "#3531174: Add configuration for additional known files in project root": "https://git.drupalcode.org/project/drupal/-/merge_requests/12432.patch",
-            "Add diagnostic logging for update fetch to diagnose CI failures": ".devpanel/patches/drupal/drupal/update-processor-diagnostic-logging.patch"
+            "#3531174: Add configuration for additional known files in project root": "https://git.drupalcode.org/project/drupal/-/merge_requests/12432.patch"
         }
     }
 }

@@ -65,22 +65,7 @@ if [ -z "$(drush status --field=db-status)" ]; then
       :
     done
   else
-    # Attempt install once; on failure, emit diagnostics and exit.
-    if ! time drush -n -vvv --debug si drupal_cms_installer installer_site_template_form.add_ons=byte; then
-      echo 'Drush site-install failed. Diagnostics:'
-      echo 'Check updates.drupal.org (HEAD):'
-      (curl -sS -I https://updates.drupal.org || true)
-      echo 'Check release-history endpoint (HEAD):'
-      (curl -sS -I https://updates.drupal.org/release-history/drupal/current || true)
-      echo 'DNS resolution for updates.drupal.org:'
-      (getent hosts updates.drupal.org || nslookup updates.drupal.org || ping -c 1 updates.drupal.org || true)
-      echo 'Composer diagnose summary:'
-      (composer -n diagnose || true)
-      echo 'Check update fetch diagnostic logs:'
-      (ls -lt logs/update-fetch-diagnosis-*.log 2>/dev/null | head -3 || echo 'No update fetch logs found')
-      (tail -50 logs/update-fetch-diagnosis-*.log 2>/dev/null || true)
-      exit 1
-    fi
+    time drush -n si drupal_cms_installer installer_site_template_form.add_ons=byte
   fi
   time drush cr
   echo 'Apply Canvas AI Setup recipe.'
