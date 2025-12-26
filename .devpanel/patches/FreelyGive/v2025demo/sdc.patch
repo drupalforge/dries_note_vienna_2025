@@ -2029,3 +2029,43 @@ index 6b4ae48..66cf31f 100644
    - stark
 -  - mercury
 +  - byte_theme
+diff --git a/web/modules/custom/context_content_watch/context_content_watch.module b/web/modules/custom/context_content_watch/context_content_watch.module
+index d937399..a62077d 100644
+--- a/web/modules/custom/context_content_watch/context_content_watch.module
++++ b/web/modules/custom/context_content_watch/context_content_watch.module
+@@ -169,7 +169,11 @@ function context_content_watch_cron() {
+                 if ($component['uuid'] === $change['uuid']) {
+                   // Use AI to figure out what to change, instead of writing a depth parser for the demo.
+                   $ai_provider = \Drupal::service('ai.provider')->createInstance('openai');
+-                  $instructions = "You are an AI assistant helping to edit content for a CMS for one row. You will be given a JSON object representing an input and an input key that might use js notation and a change. Please output the changed JSON object. Do not add any greeting or any other text, just the JSON object. Here is the JSON object:\n\n" . $component['inputs'] . "\n\nThe input key is:\n\n" . $change['input'] . "\n\nThe change to make is:\n\n" . $change['changed_data'] . "\n\nRemember to only output the changed JSON object.";
++                  // Prepare JSON strings for instructions.
++                  $inputs_json = is_string($component['inputs']) ? $component['inputs'] : Json::encode($component['inputs']);
++                  $input_key = is_string($change['input']) ? $change['input'] : Json::encode($change['input']);
++                  $changed_data = is_string($change['changed_data']) ? $change['changed_data'] : Json::encode($change['changed_data']);
++                  $instructions = "You are an AI assistant helping to edit content for a CMS for one row. You will be given a JSON object representing an input and an input key that might use js notation and a change. Please output the changed JSON object. Do not add any greeting or any other text, just the JSON object. Here is the JSON object:\n\n" . $inputs_json . "\n\nThe input key is:\n\n" . $input_key . "\n\nThe change to make is:\n\n" . $changed_data . "\n\nRemember to only output the changed JSON object.";
+                   $chat_input = new ChatInput([
+                     new ChatMessage('system', $instructions),
+                   ]);
+@@ -178,8 +182,20 @@ function context_content_watch_cron() {
+                   // Make sure you get valid JSON back.
+                   $new_input_json = Json::decode($new_input);
+                   if (is_array($new_input_json)) {
+-                    // We save the input back to the component.
+-                    $components[$component_key]['inputs'] = $new_input;
++                    // Validate input keys against the component's prop definitions
++                    // to avoid adding slot names (e.g., 'hero_slot') or unknown props.
++                    $component_id = $components[$component_key]['component_id'] ?? NULL;
++                    if ($component_id) {
++                      $config_name = 'canvas.component.' . $component_id;
++                      $config = \Drupal::config($config_name);
++                      $prop_defs = $config->get('versioned_properties.active.settings.prop_field_definitions') ?? [];
++                      if (is_array($prop_defs) && !empty($prop_defs)) {
++                        $allowed_keys = array_keys($prop_defs);
++                        $new_input_json = array_intersect_key($new_input_json, array_flip($allowed_keys));
++                      }
++                    }
++                    // Save validated inputs back to the component.
++                    $components[$component_key]['inputs'] = $new_input_json;
+                   }
+                 }
+               }
