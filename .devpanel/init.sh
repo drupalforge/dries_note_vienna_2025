@@ -30,7 +30,7 @@ else
   time source .devpanel/composer_setup.sh
   echo
 fi
-time composer -n update --no-progress
+time composer -n install --no-progress
 time ln -s -f $(realpath -s --relative-to=web/profiles project_template/web/profiles/drupal_cms_installer) web/profiles
 
 #== Create the private files directory.

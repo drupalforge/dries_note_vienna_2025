@@ -1,16 +1,10 @@
 {
     "patches": {
-        "drupal/ai_simple_pdf_to_text": {
-            "#3558855: Incorrect package name": "https://git.drupalcode.org/project/ai_simple_pdf_to_text/-/commit/17492eb2f67f07fc84b096bb9e7258fe5fbb3ba9.patch"
-        },
         "drupal/ai_vdb_provider_milvus": {
             "Use /attu proxy path instead of port 8521": ".devpanel/patches/drupal/ai_vdb_provider_milvus/use-attu-proxy-path.patch"
         },
-        "drupal/drupal_cms_admin_ui": {
-            "#3531174: Fix value type for include_unknown_files_in_project_root": ".devpanel/patches/drupal/drupal_cms_admin_ui/3531174-include_unknown_files_in_project_root.patch"
-        },
-        "drupal/core": {
-            "#3531174: Add configuration for additional known files in project root": "https://git.drupalcode.org/project/drupal/-/merge_requests/12432.patch"
+        "drupal/canvas": {
+            "#3550165: Sort property keys of default-relative-url": "https://www.drupal.org/files/issues/2025-10-28/3550165-MR187-11.patch"
         }
     }
 }
