@@ -12,6 +12,63 @@ TIMEFORMAT=%lR
 # For faster performance, don't audit dependencies automatically.
 export COMPOSER_NO_AUDIT=1
 
+# Track start time for rate limit calculations
+SCRIPT_START_TIME=$(date +%s)
+
+# Function to check rate limit and add delay if needed
+check_rate_limit_and_delay() {
+  if [ -n "${OPENAI_KEY:-}" ]; then
+    echo "Checking OpenAI API rate limit status..."
+    
+    # Make a minimal API call to check rate limit headers
+    RESPONSE=$(curl -s -i -X POST https://api.openai.com/v1/chat/completions \
+      -H "Authorization: Bearer ${OPENAI_KEY}" \
+      -H "Content-Type: application/json" \
+      -d '{"model":"gpt-4.1","messages":[{"role":"user","content":"test"}],"max_tokens":1}' 2>&1 || echo "")
+    
+    # Extract rate limit headers
+    REMAINING=$(echo "$RESPONSE" | grep -i "x-ratelimit-remaining-requests:" | awk '{print $2}' | tr -d '\r')
+    LIMIT=$(echo "$RESPONSE" | grep -i "x-ratelimit-limit-requests:" | awk '{print $2}' | tr -d '\r')
+    RESET_TIME=$(echo "$RESPONSE" | grep -i "x-ratelimit-reset-requests:" | awk '{print $2}' | tr -d '\r')
+    
+    if [ -n "$REMAINING" ] && [ -n "$LIMIT" ]; then
+      echo "Rate limit: $REMAINING/$LIMIT requests remaining"
+      
+      # If we're below 20% of limit, wait for reset
+      THRESHOLD=$((LIMIT / 5))
+      if [ "$REMAINING" -lt "$THRESHOLD" ]; then
+        CURRENT_TIME=$(date +%s)
+        
+        # Parse reset time (format: 1m30s or 30s)
+        if [[ "$RESET_TIME" =~ ([0-9]+)m([0-9]+)s ]]; then
+          WAIT_SECONDS=$((${BASH_REMATCH[1]} * 60 + ${BASH_REMATCH[2]}))
+        elif [[ "$RESET_TIME" =~ ([0-9]+)s ]]; then
+          WAIT_SECONDS=${BASH_REMATCH[1]}
+        elif [[ "$RESET_TIME" =~ ([0-9]+)ms ]]; then
+          WAIT_SECONDS=1
+        else
+          # Default to 60 seconds if can't parse
+          WAIT_SECONDS=60
+        fi
+        
+        echo "Only $REMAINING requests remaining (threshold: $THRESHOLD). Waiting ${WAIT_SECONDS}s for rate limit reset..."
+        sleep $WAIT_SECONDS
+      fi
+    else
+      # Fallback: calculate time-based delay
+      CURRENT_TIME=$(date +%s)
+      ELAPSED=$((CURRENT_TIME - SCRIPT_START_TIME))
+      
+      # If less than 60 seconds elapsed, wait the difference
+      if [ $ELAPSED -lt 60 ]; then
+        WAIT_TIME=$((60 - ELAPSED))
+        echo "Elapsed time: ${ELAPSED}s. Adding ${WAIT_TIME}s delay to avoid rate limit..."
+        sleep $WAIT_TIME
+      fi
+    fi
+  fi
+}
+
 #== Remove root-owned files.
 echo
 echo Remove root-owned files.
@@ -98,6 +155,7 @@ fi
 
 #== Warm up caches.
 echo
+check_rate_limit_and_delay
 echo 'Run cron.'
 time drush cron
 echo
