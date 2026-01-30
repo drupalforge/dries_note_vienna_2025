@@ -13,6 +13,9 @@ cp -rn v2025demo/* ./
 cp -n v2025demo/.ddev/.env.template .ddev/
 rm -rf v2025demo
 
+# Allow insecure packages.
+composer config audit.ignore SA-CONTRIB-2026-006
+
 # Scaffold settings.php.
 composer config -jm extra.drupal-scaffold.file-mapping '{
     "[web-root]/robots.txt": false,
