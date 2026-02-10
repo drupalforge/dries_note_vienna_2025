@@ -1,9 +1,9 @@
 # Install common library dependencies for Milvus
-RUN apt-get update && apt-get install -y \
-    libaio1 \
-    libopenblas0 \
-    libgomp1 \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && \
+    apt-get install -y libaio1t64 libopenblas0 libgomp1 && \
+    apt-get clean && rm -rf /var/lib/apt/lists/* && \
+    LIBAIO_LIBDIR=$(dpkg-architecture -q DEB_HOST_MULTIARCH) && \
+    ln -s /usr/lib/$LIBAIO_LIBDIR/libaio.so.1t64 /usr/lib/$LIBAIO_LIBDIR/libaio.so.1
 
 # Copy entire Milvus directory structure to preserve paths
 COPY --from=milvus /milvus /milvus
