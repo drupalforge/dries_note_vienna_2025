@@ -12,25 +12,6 @@ if [ -n "$DEBUG_SCRIPT" ]; then
   set -x
 fi
 
-# Install APT packages.
-if ! command -v npm >/dev/null 2>&1; then
-  apt-get update
-  apt-get install -y jq nano npm ripgrep
-fi
-
-PECL_UPDATED=false
-# Install APCU extension. Bypass question about enabling internal debugging.
-if ! php --ri apcu > /dev/null 2>&1; then
-  $PECL_UPDATED || pecl update-channels && PECL_UPDATED=true
-  pecl install apcu <<< ''
-  echo 'extension=apcu.so' > /usr/local/etc/php/conf.d/apcu.ini
-fi
-# Install uploadprogress extension.
-if ! php --ri uploadprogress > /dev/null 2>&1; then
-  $PECL_UPDATED || pecl update-channels && PECL_UPDATED=true
-  pecl install uploadprogress
-  echo 'extension=uploadprogress.so' > /usr/local/etc/php/conf.d/uploadprogress.ini
-fi
 # Disable Xdebug if it's enabled, as it can interfere with performance and is
 # not needed in production.
 if [ -f /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini ]; then
