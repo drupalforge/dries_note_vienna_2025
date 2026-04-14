@@ -33,7 +33,7 @@ cd $WORK_DIR
 echo -e "> Export database to $APP_ROOT/.devpanel/dumps"
 mkdir -p $APP_ROOT/.devpanel/dumps
 drush cr --quiet
-drush sql-dump --result-file=../.devpanel/dumps/db.sql --gzip --extra-dump=--no-tablespaces
+drush sql-dump --result-file=../.devpanel/dumps/db.sql --gzip
 
 # Step 2 - Compress static files
 cd $WORK_DIR

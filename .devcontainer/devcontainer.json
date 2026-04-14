@@ -1,5 +1,5 @@
 {
-    "name": "Drupal Forge Starter Template (PHP 8.3)",
+    "name": "2025 Demo (PHP 8.4)",
     "dockerComposeFile": "docker-compose.yml",
     "service": "app",
     "workspaceFolder": "/var/www/html",

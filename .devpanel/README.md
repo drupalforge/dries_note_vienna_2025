@@ -4,8 +4,8 @@ Files in the `.devpanel` directory control DevPanel deployment for this app.
 ## Startup scripts
 
 - [`custom_package_installer.sh`](custom_package_installer.sh): Installs
-  extra system software. Use sudo to run commands as root. This is called by
-  /scripts/apache-start.sh when the app starts.
+  extra system software. Runs as root. This is called by
+  /scripts/apache-start.sh before Apache starts.
 - [`init-container.sh`](init-container.sh): Checks for a database dump and
   imports it.
 - [`init.sh`](init.sh): Performs additional startup tasks. Supporting files:

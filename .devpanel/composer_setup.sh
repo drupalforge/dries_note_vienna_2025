@@ -4,7 +4,7 @@
 # You do not need this file if your template provides its own composer.json.
 
 set -eu -o pipefail
-cd "$APP_ROOT"
+cd $APP_ROOT
 
 # Create required composer.json and composer.lock files.
 git clone --depth 1 --quiet https://github.com/FreelyGive/v2025demo.git

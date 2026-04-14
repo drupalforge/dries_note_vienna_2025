@@ -3,11 +3,13 @@ include:
 
 services:
   app:
-    image: devpanel/php:8.3-base-rc
+    image: devpanel/php:8.4-base-rc
     environment:
       DP_APP_ID: 'drupalforge'
       APP_ROOT: '/var/www/html'        
       WEB_ROOT: '/var/www/html/web'
+      # Devcontainer-only unzip defaults for virtiofs metadata compatibility.
+      UNZIPOPT: '-o -DD'
       CODES_USER_DATA_DIR: '/var/www/html/.vscode'
       CODES_WORKING_DIR: '/var/www/html'
       APACHE_RUN_USER: 'www'

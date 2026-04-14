@@ -19,14 +19,14 @@ if (isset($argv[1]) && $argv[1] === '--internal') {
   $request_uri = $argv[2] ?? '/';
   
   chdir(dirname(__DIR__) . '/web');
+  $_SERVER['HTTP_USER_AGENT'] = 'Drupal Forge';
+  $_SERVER['REQUEST_URI'] = $request_uri;
+  $_SERVER['SCRIPT_NAME'] = '/index.php';
   $_SERVER['SERVER_NAME'] = 'localhost';
   $_SERVER['SERVER_PORT'] = '80';
-  $_SERVER['SCRIPT_NAME'] = '/index.php';
-  $_SERVER['REQUEST_URI'] = $request_uri;
-  
+
   // Suppress normal Drupal output
   ob_start(fn($buffer, $phase) => TRUE, 1);
-  
   require 'index.php';
   ob_end_clean();
   exit;

@@ -1,7 +1,6 @@
 /.ddev/.env.template
 /.devpanel/dumps/
 /.devpanel/milvus/
-/.devpanel/salt.txt
 /.editorconfig
 /.gitattributes
 /.vscode/
@@ -16,6 +15,7 @@
 /drupal-ai-demo-brief_v3.md
 /drupal_cms_helper/
 /logs/*
+!/logs/README.md
 /MAINTAINERS.txt
 /MODULES.md
 /patches/

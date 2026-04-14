@@ -12,9 +12,6 @@ TIMEFORMAT=%lR
 # For faster performance, don't audit dependencies automatically.
 export COMPOSER_NO_AUDIT=1
 
-# Track start time for rate limit calculations
-SCRIPT_START_TIME=$(date +%s)
-
 # Function to check rate limit and add delay if needed
 check_rate_limit_and_delay() {
   if [ -n "${OPENAI_KEY:-}" ]; then
@@ -104,18 +101,11 @@ if [ ! -d config/sync ]; then
   time mkdir -p config/sync
 fi
 
-#== Generate hash salt.
-if [ ! -f .devpanel/salt.txt ]; then
-  echo
-  echo 'Generate hash salt.'
-  time openssl rand -hex 32 > .devpanel/salt.txt
-fi
-
 #== Install Drupal.
 echo
 if [ -z "$(drush status --field=db-status)" ]; then
   echo 'Install Drupal.'
-  if ${IS_DDEV_PROJECT:-false}; then
+  if [[ "$(uname -m)" == "arm64" ]] || [[ "$(uname -m)" == "aarch64" ]]; then
     # For some reason, writable directories are sometimes detected as not
     # writable, so loop until it works.
     until time drush -n si drupal_cms_installer installer_site_template_form.add_ons=byte; do
@@ -129,7 +119,7 @@ if [ -z "$(drush status --field=db-status)" ]; then
   time drush -q recipe ../custom_recipes/canvas_ai_setup
   time drush cr
   echo 'Apply Media Images recipe.'
-  if ${IS_DDEV_PROJECT:-false}; then
+  if [[ "$(uname -m)" == "arm64" ]] || [[ "$(uname -m)" == "aarch64" ]]; then
     # For some reason, writable directories are sometimes detected as not
     # writable, so loop until it works.
     until time drush -q recipe ../custom_recipes/media_images; do
