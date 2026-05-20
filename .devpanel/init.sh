@@ -9,8 +9,12 @@ LOG_FILE="logs/init-$(date +%F-%T).log"
 exec > >(tee $LOG_FILE) 2>&1
 
 TIMEFORMAT=%lR
-# For faster performance, don't audit dependencies automatically.
+# Install regardless of security audit.
 export COMPOSER_NO_AUDIT=1
+export COMPOSER_NO_BLOCKING=1
+# Keep deprecated var for compatibility with Composer versions where
+# COMPOSER_NO_BLOCKING/--no-blocking is not supported yet.
+export COMPOSER_NO_SECURITY_BLOCKING=1
 
 # Function to check rate limit and add delay if needed
 check_rate_limit_and_delay() {
