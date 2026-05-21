@@ -18,7 +18,7 @@ if [ -f /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini ]; then
   rm -f /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini && PECL_UPDATED=true
 fi
 # Enable JIT if not already enabled, as it can improve performance for Drupal.
-if php --ri 'Zend OPcache' | grep 'opcache.enable => On' > /dev/null 2>&1; then
+if ! php --ri 'Zend OPcache' | grep 'opcache.enable => On' > /dev/null 2>&1; then
   echo 'opcache.jit=tracing' > /usr/local/etc/php/conf.d/opcache.ini \
     && PECL_UPDATED=true
 fi
