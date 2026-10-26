@@ -75,6 +75,10 @@ echo
 echo Remove root-owned files.
 time sudo rm -rf lost+found
 
+#== Wait for the embedded Milvus stack before installing Drupal.
+echo
+time .devpanel/wait-for-services.sh
+
 #== Composer install.
 echo
 if [ -f composer.json ]; then

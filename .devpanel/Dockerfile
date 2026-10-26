@@ -1,6 +1,13 @@
 USER root
 
 ARG DEBIAN_FRONTEND=noninteractive
+ARG DP_HOSTNAME=localhost
+
+ENV APACHE_RUN_USER=${APACHE_RUN_USER} \
+    APACHE_RUN_GROUP=${APACHE_RUN_GROUP} \
+    DP_HOSTNAME=${DP_HOSTNAME} \
+    WEB_ROOT=${APP_ROOT}/web \
+    CODES_ENABLE=no
 
 # Install the packages previously supplied by the custom build action.
 RUN apt-get update -qq && \
