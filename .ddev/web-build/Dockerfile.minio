@@ -1,5 +1,0 @@
-# Copy MinIO binary from the correct location
-COPY --from=minio /opt/bin/minio /usr/bin/minio
-
-# Copy Supervisor config for MinIO service
-COPY supervisor/minio.conf /etc/supervisor/conf.d/minio.conf

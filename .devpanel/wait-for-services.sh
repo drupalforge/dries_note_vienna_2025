@@ -29,7 +29,7 @@ sudo supervisorctl status || echo "supervisorctl failed" >&2
 
 # Show process list
 echo "=== Process list ===" >&2
-ps aux | grep -E '(etcd|minio|milvus|attu|supervisor)' || echo "No service processes found" >&2
+ps aux | grep -E '(etcd|rustfs|milvus|attu|supervisor)' || echo "No service processes found" >&2
 
 # Show network listeners
 echo "=== Network listeners ===" >&2
@@ -58,19 +58,19 @@ check_etcd() {
   done
 }
 
-check_minio() {
-  echo "Checking MinIO health..." >&2
+check_rustfs() {
+  echo "Checking RustFS health..." >&2
   for i in {1..60}; do
-    if curl -s -f http://127.0.0.1:9000/minio/health/live >/dev/null 2>&1; then
-      echo "✓ MinIO is healthy (attempt $i)" >&2
+    if curl -s -f http://127.0.0.1:9000/health >/dev/null 2>&1; then
+      echo "✓ RustFS is healthy (attempt $i)" >&2
       return 0
     fi
     if [ $i -eq 60 ]; then
-      echo "✗ MinIO health check failed after 60 attempts" >&2
-      echo "Final minio process check:" >&2
-      ps aux | grep minio >&2
-      echo "Final minio logs:" >&2
-      sudo tail -n 50 /var/log/minio.*.log 2>&1 >&2 || echo "No minio logs found" >&2
+      echo "✗ RustFS health check failed after 60 attempts" >&2
+      echo "Final rustfs process check:" >&2
+      ps aux | grep rustfs >&2
+      echo "Final rustfs logs:" >&2
+      sudo tail -n 50 /var/log/rustfs.*.log 2>&1 >&2 || echo "No rustfs logs found" >&2
       return 1
     fi
     sleep 1
@@ -120,7 +120,7 @@ check_attu() {
 # Run all health checks in parallel
 check_etcd &
 PID1=$!
-check_minio &
+check_rustfs &
 PID2=$!
 check_milvus &
 PID3=$!

@@ -8,9 +8,16 @@ This repository provides a Drupal Forge-compatible wrapper for running [FreelyGi
 
 This wrapper extends the original demo with Drupal Forge-specific configurations:
 
-1. **Embedded Milvus Stack**: Milvus vector database, etcd, MinIO, and Attu run inside the web container via Supervisor (matching Drupal Forge architecture)
+1. **Embedded Milvus Stack**: Milvus vector database, etcd, RustFS S3 storage, and Attu run inside the web container via Supervisor (matching Drupal Forge architecture)
 2. **Attu Web UI Access**: Access the Milvus management interface at `/attu` (Apache proxy with URL rewriting)
 3. **Drupal Forge Compatibility**: Configuration designed to work on Drupal Forge hosting platform
+
+The image build uses the main `drupalforge/docker_publish_action` workflow with
+repository-owned extensions in `.devpanel/prepend.Dockerfile` and
+`.devpanel/Dockerfile`. These preserve the Milvus stack alongside the PHP 8.4 base.
+RustFS listens only on loopback port 9000, with its console disabled, and stores
+data in `.devpanel/milvus/volumes/rustfs`. Existing MinIO data is not automatically
+migrated; rebuild the demo's search index when switching an existing installation.
 
 ## Running the demo (local development)
 DDEV replicates the Drupal Forge environment locally:
