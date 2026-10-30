@@ -1,5 +1,6 @@
+---
 name: Docker build and push template
-on:
+"on":
   push:
     branches:
       - "main"
@@ -8,11 +9,17 @@ on:
   workflow_dispatch:
 permissions:
   actions: write
+  contents: read
+  packages: write
 jobs:
   build-application:
-    uses: drupalforge/docker_publish_action/.github/workflows/docker-publish.yml@dries_note_vienna_2025
+    uses: >-
+      drupalforge/docker_publish_action/.github/workflows/docker-publish.yml@main
     with:
       dockerhub_username: ${{ vars.DOCKERHUB_USERNAME }}
+      base_image: devpanel/php:8.4-base
     secrets:
       dockerhub_token: ${{ secrets.DOCKERHUB_TOKEN }}
-      openai_key: ${{ secrets.OPENAI_KEY }}
+      init_env: >-
+        ${{ format('{{"OPENAI_KEY":{0}}}',
+        toJSON(secrets.OPENAI_KEY)) }}

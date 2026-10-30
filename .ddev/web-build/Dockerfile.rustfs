@@ -1,0 +1,5 @@
+# Copy RustFS binary
+COPY --from=rustfs /usr/bin/rustfs /usr/bin/rustfs
+
+# Copy Supervisor config for RustFS service
+COPY supervisor/rustfs.conf /etc/supervisor/conf.d/rustfs.conf

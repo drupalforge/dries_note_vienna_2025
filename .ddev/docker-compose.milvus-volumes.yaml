@@ -2,6 +2,6 @@ services:
   web:
     extra_hosts:
       - "etcd:127.0.0.1"
-      - "minio:127.0.0.1"
+      - "rustfs:127.0.0.1"
       - "milvus:127.0.0.1"
       - "attu:127.0.0.1"

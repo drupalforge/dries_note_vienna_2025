@@ -3,10 +3,10 @@ include:
 
 services:
   app:
-    image: devpanel/php:8.4-base-rc
+    image: drupalforge/dries_note_vienna_2025:main
     environment:
-      DP_APP_ID: 'drupalforge'
-      APP_ROOT: '/var/www/html'        
+      DP_APP_ID: 'dries_note_vienna_2025'
+      APP_ROOT: '/var/www/html'
       WEB_ROOT: '/var/www/html/web'
       # Devcontainer-only unzip defaults for virtiofs metadata compatibility.
       UNZIPOPT: '-o -DD'
@@ -14,7 +14,9 @@ services:
       CODES_WORKING_DIR: '/var/www/html'
       APACHE_RUN_USER: 'www'
       APACHE_RUN_GROUP: 'www'
+      COMPOSER_HOME: '/home/www/.config/composer'
       CODES_ENABLE: 'no'
+      DRUPALFORGE_DEVCONTAINER: 'true'
       DB_HOST: db
       DB_PORT: 3306
       DB_ROOT_PASSWORD: root
@@ -25,4 +27,40 @@ services:
     volumes:
       - "..:/var/www/html"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+      init-source-code:
+        condition: service_completed_successfully
+
+  init-source-code:
+    # Imports code and DB from the image into the host bind.
+    image: drupalforge/dries_note_vienna_2025:main
+    environment:
+      APP_ROOT: /var/www/html
+      DB_SYNC_VOL: 'yes'
+      DRUPALFORGE_DEVCONTAINER: 'true'
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_ROOT_PASSWORD: root
+      DB_NAME: drupaldb
+      DB_USER: user
+      DB_PASSWORD: password
+      DB_DRIVER: mysql
+    entrypoint:
+      - sh
+      - -c
+      - |
+        set -e
+        git config --global --add safe.directory /var/www/build
+        cd /var/www/build
+        git stash -um "pre-image-sync-$$(date -u +%Y%m%dT%H%M%SZ)"
+        rm -f .devpanel/init-container.sh
+        "$$APP_ROOT"/.devpanel/init-container.sh
+        git reset --hard --quiet
+        git clean -df --quiet
+        git stash list -1 | grep -i "pre-image-sync-" && git stash pop || :
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - "..:/var/www/build"

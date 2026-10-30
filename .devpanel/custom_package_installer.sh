@@ -18,7 +18,7 @@ if [ -f /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini ]; then
   rm -f /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini && PECL_UPDATED=true
 fi
 # Enable JIT if not already enabled, as it can improve performance for Drupal.
-if ! php --ri 'Zend OPcache' | grep 'opcache.enable => On' > /dev/null 2>&1; then
+if php --ri 'Zend OPcache' | grep 'opcache.enable => On' > /dev/null 2>&1; then
   echo 'opcache.jit=tracing' > /usr/local/etc/php/conf.d/opcache.ini \
     && PECL_UPDATED=true
 fi
@@ -28,7 +28,7 @@ if $PECL_UPDATED && /etc/init.d/apache2 status > /dev/null; then
 fi
 
 # Add service hostnames to /etc/hosts if not already present
-for host in etcd minio milvus attu; do
+for host in etcd rustfs milvus attu; do
   if grep -q "$host" /etc/hosts; then
     echo "$host found in /etc/hosts"
   elif timeout 2 getent hosts "$host" >/dev/null 2>&1; then
@@ -44,9 +44,9 @@ for host in etcd minio milvus attu; do
   fi
 done
 
-# Ensure Milvus, Minio, and Etcd volume directories exist
+# Ensure Milvus, RustFS, and Etcd volume directories exist
 mkdir -p "$APP_ROOT/.devpanel/milvus/volumes/milvus" \
-         "$APP_ROOT/.devpanel/milvus/volumes/minio" \
+         "$APP_ROOT/.devpanel/milvus/volumes/rustfs" \
          "$APP_ROOT/.devpanel/milvus/volumes/etcd" \
          "$WEB_ROOT" \
          /run/milvus

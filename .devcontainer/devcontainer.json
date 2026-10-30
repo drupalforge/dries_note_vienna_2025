@@ -7,6 +7,5 @@
 	"forwardPorts": [
 		80
 	],
-    "updateContentCommand": ".devpanel/init.sh",
     "remoteUser": "www"
 }
