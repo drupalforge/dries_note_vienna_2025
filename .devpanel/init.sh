@@ -16,58 +16,113 @@ export COMPOSER_NO_BLOCKING=1
 # COMPOSER_NO_BLOCKING/--no-blocking is not supported yet.
 export COMPOSER_NO_SECURITY_BLOCKING=1
 
-# Function to check rate limit and add delay if needed
+# Convert an OpenAI reset duration (for example 1m30s, 1.5s or 250ms) to whole
+# seconds, rounded up.
+reset_seconds() {
+  awk -v d="$1" 'BEGIN {
+    t = 0
+    while (match(d, /^[0-9.]+(ms|h|m|s)/)) {
+      n = substr(d, 1, RLENGTH); d = substr(d, RLENGTH + 1)
+      if (n ~ /ms$/) t += n / 1000
+      else if (n ~ /h$/) t += n * 3600
+      else if (n ~ /m$/) t += n * 60
+      else t += n
+    }
+    print (t == int(t)) ? t : int(t) + 1
+  }'
+}
+
+# Print a response header value; missing headers print nothing and succeed.
+rate_limit_header() {
+  grep -i "^$2:" "$1" | awk '{print $2}' | tr -d '\r' || true
+}
+
+# Probe the embedding model used for indexing and wait when its request or
+# token limit is exhausted or nearly exhausted.
 check_rate_limit_and_delay() {
-  if [ -n "${OPENAI_KEY:-}" ]; then
-    echo "Checking OpenAI API rate limit status..."
-    
-    # Make a minimal API call to check rate limit headers
-    RESPONSE=$(curl -s -i -X POST https://api.openai.com/v1/chat/completions \
-      -H "Authorization: Bearer ${OPENAI_KEY}" \
-      -H "Content-Type: application/json" \
-      -d '{"model":"gpt-4.1","messages":[{"role":"user","content":"test"}],"max_tokens":1}' 2>&1 || echo "")
-    
-    # Extract rate limit headers
-    REMAINING=$(echo "$RESPONSE" | grep -i "x-ratelimit-remaining-requests:" | awk '{print $2}' | tr -d '\r')
-    LIMIT=$(echo "$RESPONSE" | grep -i "x-ratelimit-limit-requests:" | awk '{print $2}' | tr -d '\r')
-    RESET_TIME=$(echo "$RESPONSE" | grep -i "x-ratelimit-reset-requests:" | awk '{print $2}' | tr -d '\r')
-    
-    if [ -n "$REMAINING" ] && [ -n "$LIMIT" ]; then
-      echo "Rate limit: $REMAINING/$LIMIT requests remaining"
-      
-      # If we're below 20% of limit, wait for reset
-      THRESHOLD=$((LIMIT / 5))
-      if [ "$REMAINING" -lt "$THRESHOLD" ]; then
-        CURRENT_TIME=$(date +%s)
-        
-        # Parse reset time (format: 1m30s or 30s)
-        if [[ "$RESET_TIME" =~ ([0-9]+)m([0-9]+)s ]]; then
-          WAIT_SECONDS=$((${BASH_REMATCH[1]} * 60 + ${BASH_REMATCH[2]}))
-        elif [[ "$RESET_TIME" =~ ([0-9]+)s ]]; then
-          WAIT_SECONDS=${BASH_REMATCH[1]}
-        elif [[ "$RESET_TIME" =~ ([0-9]+)ms ]]; then
-          WAIT_SECONDS=1
-        else
-          # Default to 60 seconds if can't parse
-          WAIT_SECONDS=60
+  if [ -z "${OPENAI_KEY:-}" ]; then
+    return 0
+  fi
+  local headers status wait=0 kind remaining limit reset seconds retry_after
+  headers=$(mktemp)
+  status=$(curl -s -o /dev/null -D "$headers" -w '%{http_code}' \
+    -X POST https://api.openai.com/v1/embeddings \
+    -H "Authorization: Bearer ${OPENAI_KEY}" \
+    -H "Content-Type: application/json" \
+    -d '{"model":"text-embedding-3-small","input":"rate limit probe"}' || true)
+
+  for kind in requests tokens; do
+    remaining=$(rate_limit_header "$headers" "x-ratelimit-remaining-$kind")
+    limit=$(rate_limit_header "$headers" "x-ratelimit-limit-$kind")
+    reset=$(rate_limit_header "$headers" "x-ratelimit-reset-$kind")
+    if [[ "$remaining" =~ ^[0-9]+$ ]] && [[ "$limit" =~ ^[0-9]+$ ]]; then
+      echo "OpenAI $kind: $remaining/$limit remaining."
+      # Wait for reset below 20% of the limit, or on any 429.
+      if [ "$status" = 429 ] || [ "$remaining" -lt $((limit / 5)) ]; then
+        seconds=$(reset_seconds "$reset")
+        if [ "$seconds" -gt "$wait" ]; then
+          wait=$seconds
         fi
-        
-        echo "Only $REMAINING requests remaining (threshold: $THRESHOLD). Waiting ${WAIT_SECONDS}s for rate limit reset..."
-        sleep $WAIT_SECONDS
-      fi
-    else
-      # Fallback: calculate time-based delay
-      CURRENT_TIME=$(date +%s)
-      ELAPSED=$((CURRENT_TIME - SCRIPT_START_TIME))
-      
-      # If less than 60 seconds elapsed, wait the difference
-      if [ $ELAPSED -lt 60 ]; then
-        WAIT_TIME=$((60 - ELAPSED))
-        echo "Elapsed time: ${ELAPSED}s. Adding ${WAIT_TIME}s delay to avoid rate limit..."
-        sleep $WAIT_TIME
       fi
     fi
+  done
+  retry_after=$(rate_limit_header "$headers" retry-after)
+  rm -f "$headers"
+  if [[ "$retry_after" =~ ^[0-9]+$ ]] && [ "$retry_after" -gt "$wait" ]; then
+    wait=$retry_after
   fi
+  if [ "$status" = 429 ] && [ "$wait" -eq 0 ]; then
+    wait=20
+  elif [ "$status" != 200 ] && [ "$status" != 429 ]; then
+    echo "OpenAI rate limit probe returned HTTP $status."
+  fi
+  if [ "$wait" -gt 300 ]; then
+    echo "OpenAI rate limit resets in ${wait}s; waiting 300s at most."
+    wait=300
+  fi
+  if [ "$wait" -gt 0 ]; then
+    echo "Waiting ${wait}s for OpenAI rate limit reset..."
+    sleep "$wait"
+  fi
+}
+
+# Count items still pending in enabled, writable Search API indexes.
+remaining_search_items() {
+  local count
+  count=$(drush php:eval '$n = 0; foreach (\Drupal\search_api\Entity\Index::loadMultiple() as $index) { if ($index->status() && !$index->isReadOnly()) { $n += $index->getTrackerInstance()->getRemainingItemsCount(); } } echo $n;')
+  if ! [[ "$count" =~ ^[0-9]+$ ]]; then
+    echo "Could not count pending search items: $count" >&2
+    return 1
+  fi
+  echo "$count"
+}
+
+# Index in small, throttled chunks. Failed items stay pending, so retry them
+# with exponential backoff, and fail the build if indexing stops progressing.
+# Search API logs indexing errors without returning a failure exit code.
+index_until_complete() {
+  local remaining previous retries=0 delay
+  remaining=$(remaining_search_items)
+  while [ "$remaining" -gt 0 ]; do
+    check_rate_limit_and_delay
+    drush sapi-i --limit=5 --batch-size=5
+    previous=$remaining
+    remaining=$(remaining_search_items)
+    echo "$remaining search items remaining."
+    if [ "$remaining" -lt "$previous" ]; then
+      retries=0
+      continue
+    fi
+    retries=$((retries + 1))
+    if [ "$retries" -gt 5 ]; then
+      echo "Search indexing is incomplete ($remaining items remaining); refusing to publish." >&2
+      return 1
+    fi
+    delay=$(((2 ** retries) * 5 + RANDOM % 5))
+    echo "No indexing progress; retry $retries/5 in ${delay}s."
+    sleep "$delay"
+  done
+  echo 'Search indexing complete.'
 }
 
 #== Remove root-owned files.
@@ -135,7 +190,7 @@ if [ -z "$(drush status --field=db-status)" ]; then
   echo 'Apply Mercury Demo Page recipe.'
   time drush -q recipe ../custom_recipes/new_canvas_page
   time drush cr
-  time drush sapi-i
+  time index_until_complete
 
   echo
   echo 'Tell Automatic Updates about patches.'
@@ -152,6 +207,9 @@ echo
 check_rate_limit_and_delay
 echo 'Run cron.'
 time drush cron
+echo
+echo 'Index items queued by cron.'
+time index_until_complete
 echo
 echo 'Populate caches.'
 time drush cache:warm &> /dev/null || :

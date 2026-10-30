@@ -18,6 +18,7 @@ jobs:
     with:
       dockerhub_username: ${{ vars.DOCKERHUB_USERNAME }}
       base_image: devpanel/php:8.4-base
+      max_parallel: 1
     secrets:
       dockerhub_token: ${{ secrets.DOCKERHUB_TOKEN }}
       init_env: >-
