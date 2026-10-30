@@ -57,12 +57,12 @@ check_rate_limit_and_delay() {
     reset=$(rate_limit_header "$headers" "x-ratelimit-reset-$kind")
     if [[ "$remaining" =~ ^[0-9]+$ ]] && [[ "$limit" =~ ^[0-9]+$ ]]; then
       echo "OpenAI $kind: $remaining/$limit remaining."
-      # Wait for reset below 20% of the limit, or on any 429.
-      if [ "$status" = 429 ] || [ "$remaining" -lt $((limit / 5)) ]; then
-        seconds=$(reset_seconds "$reset")
-        if [ "$seconds" -gt "$wait" ]; then
-          wait=$seconds
-        fi
+    fi
+    # 429 reset headers are useful even when quota counters are unavailable.
+    if [ "$status" = 429 ] || { [[ "$remaining" =~ ^[0-9]+$ ]] && [[ "$limit" =~ ^[0-9]+$ ]] && [ "$remaining" -lt $((limit / 5)) ]; }; then
+      seconds=$(reset_seconds "$reset")
+      if [ "$seconds" -gt "$wait" ]; then
+        wait=$seconds
       fi
     fi
   done
